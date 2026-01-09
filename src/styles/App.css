@@ -294,13 +294,42 @@ body {
   width: 100%;
 }
 
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .event-timeline h2 {
-  margin: 0 0 20px 0;
+  margin: 0;
   color: #333;
+}
+
+.reset-zoom-button {
+  padding: 6px 12px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reset-zoom-button:hover {
+  background-color: #5a6268;
 }
 
 .timeline-container {
   width: 100%;
+  position: relative;
+  cursor: grab;
+}
+
+.timeline-container:active {
+  cursor: grabbing;
 }
 
 .timeline-legend {
