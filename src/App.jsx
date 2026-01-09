@@ -18,13 +18,8 @@ function App() {
         // First, try to get state from URL
         const urlState = getStateFromUrl();
         
-        // If config exists in URL, use it; otherwise load from file
-        let loadedConfig;
-        if (urlState.config) {
-          loadedConfig = urlState.config;
-        } else {
-          loadedConfig = await loadConfig();
-        }
+        // Always load config from YAML file (don't store in URL)
+        const loadedConfig = await loadConfig();
         
         setConfig(loadedConfig);
         // Convert ISO strings back to Date objects when loading from URL
@@ -44,9 +39,10 @@ function App() {
     initialize();
   }, []);
 
-  // Sync state to URL whenever events or config changes
+  // Sync state to URL whenever events change
+  // Don't store config in URL - it's loaded from YAML file
   useEffect(() => {
-    if (config && events !== null) {
+    if (events !== null) {
       // Convert Date objects to ISO strings for serialization
       const serializedEvents = events.map(event => ({
         ...event,
@@ -55,9 +51,10 @@ function App() {
           : event.timestamp
       }));
       
-      updateUrlState(serializedEvents, config);
+      // Only store events in URL, not config (config comes from YAML)
+      updateUrlState(serializedEvents, null);
     }
-  }, [events, config]);
+  }, [events]);
 
   // Listen for hash changes (back/forward navigation)
   useEffect(() => {
@@ -71,9 +68,7 @@ function App() {
         }));
         setEvents(deserializedEvents);
       }
-      if (urlState.config) {
-        setConfig(urlState.config);
-      }
+      // Config is always loaded from YAML, not from URL
     };
 
     window.addEventListener('hashchange', handleHashChange);
