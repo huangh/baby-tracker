@@ -20,11 +20,11 @@
   },
   "homepage": "https://github.com/huangh/baby-tracker#readme",
   "dependencies": {
-    "@vitejs/plugin-react": "^5.1.2",
+    "@vitejs/plugin-react": "^4.3.1",
     "js-yaml": "^4.1.1",
     "react": "^19.2.3",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.3",
-    "vite": "^7.3.1"
+    "vite": "^5.4.21"
   }
 }
