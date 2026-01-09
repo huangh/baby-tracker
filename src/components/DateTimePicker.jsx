@@ -20,11 +20,27 @@ export default function DateTimePicker({ value, onChange, label, required }) {
 
   // Update useNow when value changes externally
   useEffect(() => {
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DateTimePicker.jsx:22',message:'useEffect entry',data:{hasValue:!!value,valueType:value?.constructor?.name,valueIso:value?.toISOString?.()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    } catch(e) {}
+    // #endregion
     if (value) {
       const dateValue = value instanceof Date ? value : new Date(value);
       const now = new Date();
       const diff = Math.abs(now - dateValue);
-      setUseNow(diff < 5000);
+      const shouldUseNow = diff < 5000;
+      // #region agent log
+      try {
+        fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DateTimePicker.jsx:27',message:'Before setUseNow',data:{diff:diff,shouldUseNow:shouldUseNow,currentUseNow:useNow},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      } catch(e) {}
+      // #endregion
+      setUseNow(shouldUseNow);
+      // #region agent log
+      try {
+        fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DateTimePicker.jsx:28',message:'After setUseNow',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      } catch(e) {}
+      // #endregion
     }
   }, [value]);
 

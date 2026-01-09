@@ -93,8 +93,19 @@ function App() {
   };
 
   const getCurrentEventTypeConfig = () => {
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:90',message:'getCurrentEventTypeConfig called',data:{hasConfig:!!config,selectedEventType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    } catch(e) {}
+    // #endregion
     if (!config) return null;
-    return getEventTypeConfig(config, selectedEventType);
+    const result = getEventTypeConfig(config, selectedEventType);
+    // #region agent log
+    try {
+      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:93',message:'getCurrentEventTypeConfig result',data:{hasResult:!!result,resultId:result?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    } catch(e) {}
+    // #endregion
+    return result;
   };
 
   if (loading) {
