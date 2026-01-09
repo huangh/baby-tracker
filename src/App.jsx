@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
+import EventTimeline from './components/EventTimeline';
+import CopyUrlButton from './components/CopyUrlButton';
 import { loadConfig, getEventTypeConfig } from './utils/configLoader';
 import { getStateFromUrl, updateUrlState } from './utils/urlState';
 
@@ -88,19 +90,8 @@ function App() {
   };
 
   const getCurrentEventTypeConfig = () => {
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:90',message:'getCurrentEventTypeConfig called',data:{hasConfig:!!config,selectedEventType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
     if (!config) return null;
-    const result = getEventTypeConfig(config, selectedEventType);
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.jsx:93',message:'getCurrentEventTypeConfig result',data:{hasResult:!!result,resultId:result?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
-    return result;
+    return getEventTypeConfig(config, selectedEventType);
   };
 
   if (loading) {
@@ -130,7 +121,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Baby Event Tracker</h1>
+        <div className="header-top">
+          <h1>Baby Event Tracker</h1>
+          <CopyUrlButton />
+        </div>
         <div className="event-type-selector">
           <label htmlFor="event-type">Event Type: </label>
           <select
@@ -159,6 +153,10 @@ function App() {
           <EventList events={events} config={config} />
         </div>
       </main>
+
+      <div className="timeline-section">
+        <EventTimeline events={events} config={config} />
+      </div>
     </div>
   );
 }

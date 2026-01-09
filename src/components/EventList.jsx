@@ -20,10 +20,12 @@ export default function EventList({ events, config }) {
     return d.toLocaleString();
   };
 
-  const getEventTypeLabel = (eventTypeId) => {
-    if (!config || !config.events) return eventTypeId;
+  const getEventTypeInfo = (eventTypeId) => {
+    if (!config || !config.events) return { label: eventTypeId, emoji: '' };
     const eventType = config.events.find(e => e.id === eventTypeId);
-    return eventType ? eventType.label : eventTypeId;
+    return eventType 
+      ? { label: eventType.label, emoji: eventType.emoji || '' }
+      : { label: eventTypeId, emoji: '' };
   };
 
   const formatEventDetails = (event) => {
@@ -53,12 +55,17 @@ export default function EventList({ events, config }) {
     <div className="event-list">
       <h2>Event History</h2>
       <div className="events-container">
-        {sortedEvents.map((event, index) => (
-          <div key={index} className="event-item">
-            <div className="event-header">
-              <span className="event-type">{getEventTypeLabel(event.eventType)}</span>
-              <span className="event-time">{formatDate(event.timestamp)}</span>
-            </div>
+        {sortedEvents.map((event, index) => {
+          const eventTypeInfo = getEventTypeInfo(event.eventType);
+          return (
+            <div key={index} className="event-item">
+              <div className="event-header">
+                <span className="event-type">
+                  {eventTypeInfo.emoji && <span className="event-emoji">{eventTypeInfo.emoji}</span>}
+                  {eventTypeInfo.label}
+                </span>
+                <span className="event-time">{formatDate(event.timestamp)}</span>
+              </div>
             {formatEventDetails(event).length > 0 && (
               <div className="event-details">
                 {formatEventDetails(event).map((detail, i) => (
@@ -67,7 +74,8 @@ export default function EventList({ events, config }) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,17 @@
 events:
   - id: feeding
     label: Feeding
+    emoji: 🍼
+    categories:
+      - id: breastmilk
+        label: Breastmilk
+        emoji: 🤱
+      - id: formula
+        label: Formula
+        emoji: 🥛
+      - id: bottle
+        label: Bottle
+        emoji: 🍼
     fields:
       - id: type
         label: Type
@@ -26,6 +37,7 @@ events:
 
   - id: peeing
     label: Peeing
+    emoji: 💧
     fields:
       - id: timestamp
         label: Time
@@ -35,6 +47,7 @@ events:
 
   - id: pooping
     label: Pooping
+    emoji: 💩
     fields:
       - id: timestamp
         label: Time
