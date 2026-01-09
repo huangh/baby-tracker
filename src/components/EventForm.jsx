@@ -1,0 +1,188 @@
+import React, { useState, useEffect } from 'react';
+import DateTimePicker from './DateTimePicker';
+
+/**
+ * EventForm Component
+ * Dynamically renders form fields based on YAML config
+ */
+export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {} }) {
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    // Initialize form data with defaults
+    const initialData = {};
+    if (eventTypeConfig && eventTypeConfig.fields) {
+      eventTypeConfig.fields.forEach(field => {
+        if (field.default === 'now' && field.type === 'datetime') {
+          initialData[field.id] = new Date();
+        } else if (field.default !== undefined) {
+          initialData[field.id] = field.default;
+        } else if (initialValues[field.id] !== undefined) {
+          initialData[field.id] = initialValues[field.id];
+        } else {
+          initialData[field.id] = field.type === 'number' ? '' : '';
+        }
+      });
+    }
+    setFormData(initialData);
+  }, [eventTypeConfig, initialValues]);
+
+  const handleChange = (fieldId, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldId]: value
+    }));
+    // Clear error for this field
+    if (errors[fieldId]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldId];
+        return newErrors;
+      });
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!eventTypeConfig || !eventTypeConfig.fields) {
+      return false;
+    }
+
+    eventTypeConfig.fields.forEach(field => {
+      const value = formData[field.id];
+      
+      if (field.required && (value === undefined || value === null || value === '')) {
+        newErrors[field.id] = `${field.label} is required`;
+      }
+
+      if (field.type === 'number' && value !== undefined && value !== '') {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          newErrors[field.id] = `${field.label} must be a number`;
+        } else if (field.min !== undefined && numValue < field.min) {
+          newErrors[field.id] = `${field.label} must be at least ${field.min}`;
+        }
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validate()) {
+      onSubmit({
+        ...formData,
+        eventType: eventTypeConfig.id,
+        timestamp: formData.timestamp || new Date()
+      });
+      // Reset form to defaults
+      const defaultData = {};
+      eventTypeConfig.fields.forEach(field => {
+        if (field.default === 'now' && field.type === 'datetime') {
+          defaultData[field.id] = new Date();
+        } else {
+          defaultData[field.id] = field.type === 'number' ? '' : '';
+        }
+      });
+      setFormData(defaultData);
+    }
+  };
+
+  if (!eventTypeConfig || !eventTypeConfig.fields) {
+    return <div>No event type selected</div>;
+  }
+
+  const renderField = (field) => {
+    const value = formData[field.id];
+    const error = errors[field.id];
+
+    switch (field.type) {
+      case 'datetime':
+        return (
+          <DateTimePicker
+            key={field.id}
+            value={value}
+            onChange={(date) => handleChange(field.id, date)}
+            label={field.label}
+            required={field.required}
+          />
+        );
+
+      case 'select':
+        return (
+          <div key={field.id} className="form-field">
+            <label>
+              {field.label}
+              {field.required && <span className="required">*</span>}
+            </label>
+            <select
+              value={value || ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              required={field.required}
+            >
+              <option value="">Select {field.label}</option>
+              {field.options.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {error && <span className="error">{error}</span>}
+          </div>
+        );
+
+      case 'number':
+        return (
+          <div key={field.id} className="form-field">
+            <label>
+              {field.label}
+              {field.required && <span className="required">*</span>}
+            </label>
+            <input
+              type="number"
+              value={value || ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              min={field.min}
+              step={field.step || 1}
+              required={field.required}
+            />
+            {error && <span className="error">{error}</span>}
+          </div>
+        );
+
+      case 'text':
+        return (
+          <div key={field.id} className="form-field">
+            <label>
+              {field.label}
+              {field.required && <span className="required">*</span>}
+            </label>
+            <input
+              type="text"
+              value={value || ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              placeholder={field.placeholder || ''}
+              required={field.required}
+            />
+            {error && <span className="error">{error}</span>}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="event-form">
+      <h2>{eventTypeConfig.label}</h2>
+      {eventTypeConfig.fields.map(field => renderField(field))}
+      <button type="submit" className="submit-button">
+        Add Event
+      </button>
+    </form>
+  );
+}

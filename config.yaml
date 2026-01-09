@@ -1,0 +1,48 @@
+events:
+  - id: feeding
+    label: Feeding
+    fields:
+      - id: type
+        label: Type
+        type: select
+        required: true
+        options:
+          - value: breastmilk
+            label: Breastmilk
+          - value: formula
+            label: Formula
+          - value: bottle
+            label: Bottle
+      - id: amount
+        label: Amount (ml)
+        type: number
+        required: true
+        min: 0
+      - id: timestamp
+        label: Time
+        type: datetime
+        default: now
+        required: true
+
+  - id: peeing
+    label: Peeing
+    fields:
+      - id: timestamp
+        label: Time
+        type: datetime
+        default: now
+        required: true
+
+  - id: pooping
+    label: Pooping
+    fields:
+      - id: timestamp
+        label: Time
+        type: datetime
+        default: now
+        required: true
+      - id: consistency
+        label: Consistency
+        type: text
+        required: false
+        placeholder: Describe the consistency...
