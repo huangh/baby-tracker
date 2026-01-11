@@ -4,6 +4,7 @@ import EventList from './components/EventList';
 import DailyTimelineChart from './components/charts/DailyTimelineChart';
 import WeeklySummaryChart from './components/charts/WeeklySummaryChart';
 import StatisticsModule from './components/statistics/StatisticsModule';
+import JsonEditor from './components/JsonEditor';
 import CopyUrlButton from './components/CopyUrlButton';
 import ShareButton from './components/ShareButton';
 import { loadConfig, getEventTypeConfig } from './utils/configLoader';
@@ -156,6 +157,17 @@ function App() {
     setEvents(prev => [...prev, newEvent]);
   };
 
+  const handleJsonUpdate = (updatedEvents) => {
+    // Ensure all timestamps are Date objects
+    const normalizedEvents = updatedEvents.map(event => ({
+      ...event,
+      timestamp: event.timestamp instanceof Date 
+        ? event.timestamp 
+        : new Date(event.timestamp)
+    }));
+    setEvents(normalizedEvents);
+  };
+
   const getCurrentEventTypeConfig = () => {
     if (!config) return null;
     return getEventTypeConfig(config, selectedEventType);
@@ -265,6 +277,10 @@ function App() {
           <EventList events={events} config={config} />
         </div>
       </main>
+
+      <div className="json-section">
+        <JsonEditor events={events} onUpdate={handleJsonUpdate} />
+      </div>
 
       <div className="charts-section">
         <StatisticsModule events={events} />
