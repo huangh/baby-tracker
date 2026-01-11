@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import EventForm from './components/EventForm';
 import EventList from './components/EventList';
-import EventTimeline from './components/EventTimeline';
+import DailyTimelineChart from './components/charts/DailyTimelineChart';
+import WeeklySummaryChart from './components/charts/WeeklySummaryChart';
+import StatisticsModule from './components/statistics/StatisticsModule';
 import CopyUrlButton from './components/CopyUrlButton';
 import { loadConfig, getEventTypeConfig } from './utils/configLoader';
 import { getStateFromUrl, updateUrlState } from './utils/urlState';
@@ -154,8 +156,10 @@ function App() {
         </div>
       </main>
 
-      <div className="timeline-section">
-        <EventTimeline events={events} config={config} />
+      <div className="charts-section">
+        <StatisticsModule events={events} />
+        <DailyTimelineChart events={events} config={config} />
+        <WeeklySummaryChart events={events} />
       </div>
     </div>
   );
