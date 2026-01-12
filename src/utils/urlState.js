@@ -2,6 +2,7 @@
  * URL State Management Utilities
  * Encodes/decodes app state and config to/from URL-safe base64 JSON
  * Supports optional password encryption
+ * Encodes/decodes app state with compression, minification, and timestamp optimization
  */
 
 import { encrypt, decrypt, isEncrypted } from './encryption';
@@ -9,17 +10,40 @@ import { encrypt, decrypt, isEncrypted } from './encryption';
 // Prefix to identify encrypted URLs
 const ENCRYPTED_PREFIX = 'enc:';
 
+import { minifyEvents, expandEvents } from './schemaMapping';
+import { compressTimestamp, decompressTimestamp } from './timestampCompression';
+import { compressEvents, decompressEvents } from './dataCompression';
+
 /**
- * Encode state and config to URL-safe base64 string
- * @param {Object} data - Event data array
- * @param {Object} config - YAML config object
+ * Encode state to URL-safe base64 string with optimizations
+ * @param {Array} events - Event data array (display schema)
+ * @param {Object} config - YAML config object (not stored, but kept for compatibility)
  * @returns {string} URL-safe base64 encoded string
  */
-export function encodeState(data, config) {
+export function encodeState(events, config) {
+  // Compress timestamps and minify field names
+  const processedEvents = (events || []).map(event => {
+    const processed = { ...event };
+    
+    // Compress timestamp: round to 15 minutes and convert to Unix timestamp
+    if (processed.timestamp) {
+      processed.timestamp = compressTimestamp(processed.timestamp);
+    }
+    
+    return processed;
+  });
+  
+  // Compress old events to summaries
+  const compressed = compressEvents(processedEvents);
+  
+  // Minify field names for URL schema
+  const minifiedRecent = minifyEvents(compressed.recent);
+  
   const state = {
-    data: data || [],
-    config: config || null
+    r: minifiedRecent, // recent events (minified)
+    s: compressed.summaries || [] // summaries (already compact)
   };
+  
   const jsonString = JSON.stringify(state);
   // Convert to base64, then make URL-safe
   const base64 = btoa(unescape(encodeURIComponent(jsonString)));
@@ -45,8 +69,9 @@ export async function encodeStateEncrypted(data, config, password) {
 
 /**
  * Decode URL-safe base64 string to state and config
+ * Decode URL-safe base64 string to state
  * @param {string} encodedString - URL-safe base64 encoded string
- * @returns {Object} Object with data and config properties
+ * @returns {Object} Object with events array (display schema)
  */
 export function decodeState(encodedString) {
   if (!encodedString) {
@@ -63,8 +88,48 @@ export function decodeState(encodedString) {
     
     const jsonString = decodeURIComponent(escape(atob(base64)));
     const state = JSON.parse(jsonString);
+    
+    // Handle both old format (backward compatibility) and new compressed format
+    let events = [];
+    
+    if (state.data) {
+      // Old format: {data: [...], config: ...}
+      events = state.data;
+    } else if (state.r || state.s) {
+      // New compressed format: {r: recent events, s: summaries}
+      const compressed = {
+        recent: state.r || [],
+        summaries: state.s || []
+      };
+      
+      // Expand field names and decompress timestamps
+      const expandedRecent = expandEvents(compressed.recent).map(event => ({
+        ...event,
+        timestamp: event.timestamp ? decompressTimestamp(event.timestamp) : new Date()
+      }));
+      
+      // Decompress summaries back to events
+      events = decompressEvents({
+        recent: expandedRecent,
+        summaries: compressed.summaries
+      });
+    } else {
+      // Fallback: assume it's an array of events
+      events = Array.isArray(state) ? state : [];
+    }
+    
+    // Ensure all timestamps are Date objects
+    events = events.map(event => ({
+      ...event,
+      timestamp: event.timestamp instanceof Date 
+        ? event.timestamp 
+        : (typeof event.timestamp === 'number' 
+          ? decompressTimestamp(event.timestamp) 
+          : new Date(event.timestamp))
+    }));
+    
     return {
-      data: state.data || [],
+      data: events,
       config: state.config || null
     };
   } catch (error) {
@@ -116,8 +181,8 @@ export function getStateFromUrl() {
 
 /**
  * Update URL hash with encoded state
- * @param {Array} data - Event data array
- * @param {Object} config - YAML config object
+ * @param {Array} data - Event data array (display schema)
+ * @param {Object} config - YAML config object (not used, kept for compatibility)
  */
 export function updateUrlState(data, config) {
   const encoded = encodeState(data, config);
