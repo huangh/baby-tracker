@@ -1,0 +1,10 @@
+services:
+  baby-tracker:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      # Mount config.yaml so it can be edited without rebuilding
+      - ./public/config.yaml:/usr/share/nginx/html/config.yaml
+    restart: unless-stopped
+    container_name: baby-tracker
