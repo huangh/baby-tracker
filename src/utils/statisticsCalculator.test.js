@@ -3,9 +3,9 @@ import { calculateAverageTimeBetweenFeeds } from './statisticsCalculator';
 
 describe('Statistics Calculator', () => {
   describe('calculateAverageTimeBetweenFeeds', () => {
-    it('should return N/A for insufficient events', () => {
+    it('should return N/A if fewer than 2 feeding events', () => {
       const events = [
-        { eventType: 'feeding', timestamp: new Date() }
+        { eventType: 'feeding', timestamp: new Date('2023-01-01T10:00:00') }
       ];
       const result = calculateAverageTimeBetweenFeeds(events);
       expect(result.averageMinutes).toBeNull();
@@ -58,6 +58,17 @@ describe('Statistics Calculator', () => {
        
        const result = calculateAverageTimeBetweenFeeds(events);
        expect(result.averageMinutes).toBe(60);
+    });
+
+    it('should handle string timestamps', () => {
+      const events = [
+        { eventType: 'feeding', timestamp: '2023-01-01T10:00:00' },
+        { eventType: 'feeding', timestamp: '2023-01-01T12:30:00' }
+      ];
+      // 150 mins
+      const result = calculateAverageTimeBetweenFeeds(events);
+      expect(result.averageMinutes).toBe(150);
+      expect(result.formatted).toBe('2h 30m');
     });
   });
 });

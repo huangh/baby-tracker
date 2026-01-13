@@ -1,95 +1,90 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import EventForm from './EventForm';
 
+// Mock fetch to prevent network requests during tests
+global.fetch = vi.fn(() => Promise.resolve({
+    json: () => Promise.resolve({}),
+    catch: () => {}
+}));
+
 describe('EventForm', () => {
-  const mockConfig = {
+  const mockSubmit = vi.fn();
+  const feedConfig = {
     id: 'feeding',
     label: 'Feeding',
     fields: [
-      {
-        id: 'type',
-        label: 'Type',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'breastmilk', label: 'Breastmilk' },
-          { value: 'formula', label: 'Formula' }
-        ]
-      },
-      {
-        id: 'amount',
-        label: 'Amount (ml)',
-        type: 'number',
-        required: true,
-        min: 0
-      },
-      {
-        id: 'timestamp',
-        label: 'Time',
-        type: 'datetime',
-        default: 'now',
-        required: true
-      }
+      { id: 'timestamp', type: 'datetime', label: 'Time', default: 'now', required: true },
+      { id: 'type', type: 'select', label: 'Type', options: [{ value: 'breast', label: 'Breast' }, { value: 'bottle', label: 'Bottle' }], required: true },
+      { id: 'amount', type: 'number', label: 'Amount (ml)', min: 0 }
     ]
   };
 
+  beforeEach(() => {
+    mockSubmit.mockClear();
+    vi.clearAllMocks();
+  });
+
   it('renders form fields based on config', () => {
-    render(<EventForm eventTypeConfig={mockConfig} onSubmit={() => {}} />);
+    render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
     
-    expect(screen.getByRole('heading', { name: 'Feeding' })).toBeInTheDocument();
-    expect(screen.getByLabelText(/Type/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Amount/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Time/)).toBeInTheDocument();
+    expect(screen.getByText('Feeding')).toBeInTheDocument();
+    // Use a custom matcher to find the label text 'Time' (ignoring the * span)
+    expect(screen.getByText((content, element) => {
+      return element.tagName.toLowerCase() === 'label' && content.includes('Time');
+    })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Type/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Amount/i)).toBeInTheDocument();
   });
 
-  it('validates required fields', async () => {
-    const handleSubmit = vi.fn();
-    render(<EventForm eventTypeConfig={mockConfig} onSubmit={handleSubmit} />);
-    
-    // Submit without filling fields
-    fireEvent.click(screen.getByRole('button', { name: /Add Event/i }));
-    
-    expect(handleSubmit).not.toHaveBeenCalled();
-    // Check for HTML5 validation or custom validation messages
-    // The component uses custom validation rendering error messages
-    // Note: The current implementation renders span with class "error"
-    // We might need to fill one field to trigger validation logic clearly or check if errors appear.
-    // Let's assume the component adds error messages to the DOM.
-    // Looking at code: {error && <span className="error">{error}</span>}
-  });
-
-  it('submits correct data when filled', async () => {
+  it('handles input changes', async () => {
     const user = userEvent.setup();
-    const handleSubmit = vi.fn();
-    render(<EventForm eventTypeConfig={mockConfig} onSubmit={handleSubmit} />);
+    render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
+    
+    const amountInput = screen.getByLabelText(/Amount/i);
+    await user.type(amountInput, '100');
+    
+    expect(amountInput.value).toBe('100');
+  });
+
+  it('validates required fields', () => {
+    render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
+    
+    const submitButton = screen.getByText('Add Event');
+    fireEvent.click(submitButton);
+    
+    // Should show error for Type because it is required and empty
+    // Timestamp has default 'now', so it might be populated
+    expect(screen.getByText('Type is required')).toBeInTheDocument();
+    expect(mockSubmit).not.toHaveBeenCalled();
+  });
+
+  it('submits form with correct data', async () => {
+    const user = userEvent.setup();
+    render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
     
     // Select type
-    await user.selectOptions(screen.getByLabelText(/Type/), 'formula');
+    const typeSelect = screen.getByLabelText(/Type/i);
+    await user.selectOptions(typeSelect, 'bottle');
     
     // Enter amount
-    await user.type(screen.getByLabelText(/Amount/), '150');
+    const amountInput = screen.getByLabelText(/Amount/i);
+    await user.type(amountInput, '150');
     
-    // Time is auto-filled with 'now', so we don't strictly need to edit it, 
-    // but we should ensure it's there.
+    const submitButton = screen.getByText('Add Event');
+    await user.click(submitButton);
     
-    await user.click(screen.getByRole('button', { name: /Add Event/i }));
-    
-    expect(handleSubmit).toHaveBeenCalledTimes(1);
-    const submittedData = handleSubmit.mock.calls[0][0];
-    
+    expect(mockSubmit).toHaveBeenCalledTimes(1);
+    const submittedData = mockSubmit.mock.calls[0][0];
     expect(submittedData.eventType).toBe('feeding');
-    expect(submittedData.type).toBe('formula');
-    // Note: input type="number" returns string in some react handlers, but the validate function parses it.
-    // However, the handleChange just sets it as string. 
-    // Wait, let's check EventForm.jsx again.
-    // handleChange sets state directly. validate checks if it's a number but doesn't convert the state.
-    // handleSubmit calls onSubmit with ...formData. 
-    // So 'amount' will likely be a string "150". 
-    // Wait, the app might expect a number.
-    // Let's check EventForm.jsx:
-    // It doesn't convert to number before sending to onSubmit.
-    expect(submittedData.amount).toBe('150'); 
+    expect(submittedData.type).toBe('bottle');
+    expect(submittedData.amount).toBe('150');
+    expect(submittedData.timestamp).toBeDefined();
+  });
+
+  it('displays error message if no config provided', () => {
+    render(<EventForm eventTypeConfig={null} onSubmit={mockSubmit} />);
+    expect(screen.getByText('No event type selected')).toBeInTheDocument();
   });
 });

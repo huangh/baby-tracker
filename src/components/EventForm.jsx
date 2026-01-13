@@ -215,7 +215,7 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="event-form">
+    <form onSubmit={handleSubmit} className="event-form" noValidate>
       <h2>{eventTypeConfig.label}</h2>
       {eventTypeConfig.fields.map(field => renderField(field))}
       <button type="submit" className="submit-button">

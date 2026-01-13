@@ -80,7 +80,14 @@ body {
   letter-spacing: -0.5px;
 }
 
-.copy-url-button {
+.header-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.copy-url-button,
+.share-button {
   padding: 10px 20px;
   background-color: var(--color-primary);
   color: white;
@@ -94,14 +101,25 @@ body {
   min-height: 44px; /* Touch target */
 }
 
-.copy-url-button:hover {
+.copy-url-button:hover,
+.share-button:hover {
   background-color: #9B8BC4;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
-.copy-url-button:active {
+.copy-url-button:active,
+.share-button:active {
   transform: translateY(0);
+}
+
+.share-button {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+
+.share-button:hover {
+  background-color: #8BD4B5;
 }
 
 .event-type-selector {
@@ -527,6 +545,162 @@ body {
   margin-bottom: 0;
 }
 
+/* Share Dialog */
+.share-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
+.share-dialog {
+  background-color: var(--color-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  max-width: 400px;
+  width: 100%;
+  padding: var(--spacing-lg);
+  animation: dialogSlideIn 0.2s ease-out;
+}
+
+@keyframes dialogSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-dialog h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.share-dialog-content {
+  margin-bottom: var(--spacing-lg);
+}
+
+.share-dialog-content p {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.password-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-md);
+  min-height: 44px;
+}
+
+.password-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.password-toggle span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.password-hint {
+  font-size: 12px;
+  color: var(--color-text-light);
+  margin: 0;
+  font-style: italic;
+}
+
+.share-error {
+  color: #FF6B9D;
+  font-size: 13px;
+  margin: var(--spacing-sm) 0 0 0;
+  padding: var(--spacing-sm);
+  background-color: rgba(255, 107, 157, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.share-success {
+  color: #4CAF50;
+  font-size: 13px;
+  margin: var(--spacing-sm) 0 0 0;
+  padding: var(--spacing-sm);
+  background-color: rgba(76, 175, 80, 0.1);
+  border-radius: var(--radius-sm);
+}
+
+.share-dialog-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.share-dialog-cancel,
+.share-dialog-confirm {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.share-dialog-cancel {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.share-dialog-cancel:hover {
+  background-color: var(--color-border);
+}
+
+.share-dialog-confirm {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.share-dialog-confirm:hover {
+  background-color: #9B8BC4;
+}
+
+.share-dialog-cancel:disabled,
+.share-dialog-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .app {
@@ -547,7 +721,13 @@ body {
     font-size: 24px;
   }
 
-  .copy-url-button {
+  .header-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .copy-url-button,
+  .share-button {
     width: 100%;
   }
 
@@ -579,5 +759,19 @@ body {
   .daily-timeline-chart,
   .weekly-summary-chart {
     padding: var(--spacing-md);
+  }
+
+  .share-dialog {
+    margin: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+
+  .share-dialog-actions {
+    flex-direction: column;
+  }
+
+  .share-dialog-cancel,
+  .share-dialog-confirm {
+    width: 100%;
   }
 }
