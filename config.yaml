@@ -1,3 +1,5 @@
+babyName: "Baby"
+
 events:
   - id: feeding
     label: Feeding
