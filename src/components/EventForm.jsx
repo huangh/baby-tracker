@@ -138,6 +138,7 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
         return (
           <DateTimePicker
             key={field.id}
+            id={field.id}
             value={value}
             onChange={(date) => handleChange(field.id, date)}
             label={field.label}
@@ -148,11 +149,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'select':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <select
+              id={field.id}
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
               required={field.required}
@@ -171,11 +173,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'number':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <input
+              id={field.id}
               type="number"
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
@@ -190,11 +193,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'text':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <input
+              id={field.id}
               type="text"
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
