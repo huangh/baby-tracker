@@ -51,6 +51,21 @@ Preview production build:
 npm run preview
 ```
 
+## Deployment with Docker
+
+The simplest way to deploy this application for local network usage is using Docker Compose.
+
+1.  **Build and Run**:
+    ```bash
+    docker-compose up -d --build
+    ```
+
+2.  **Access the App**:
+    Open your browser and navigate to `http://localhost:8080` (or your server's IP address:8080).
+
+3.  **Update Configuration**:
+    The `public/config.yaml` file is mounted into the container. You can edit this file locally to change event types or fields, and simply refresh the page in your browser to see the changes. No rebuild is required.
+
 ## Configuration
 
 Edit `public/config.yaml` to customize event types, fields, and validation rules. The configuration structure:
