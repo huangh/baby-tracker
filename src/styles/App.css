@@ -80,7 +80,14 @@ body {
   letter-spacing: -0.5px;
 }
 
-.copy-url-button {
+.header-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.copy-url-button,
+.share-button {
   padding: 10px 20px;
   background-color: var(--color-primary);
   color: white;
@@ -94,14 +101,25 @@ body {
   min-height: 44px; /* Touch target */
 }
 
-.copy-url-button:hover {
+.copy-url-button:hover,
+.share-button:hover {
   background-color: #9B8BC4;
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
 
-.copy-url-button:active {
+.copy-url-button:active,
+.share-button:active {
   transform: translateY(0);
+}
+
+.share-button {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+}
+
+.share-button:hover {
+  background-color: #8BD4B5;
 }
 
 .event-type-selector {
@@ -547,7 +565,13 @@ body {
     font-size: 24px;
   }
 
-  .copy-url-button {
+  .header-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .copy-url-button,
+  .share-button {
     width: 100%;
   }
 

@@ -5,6 +5,7 @@ import DailyTimelineChart from './components/charts/DailyTimelineChart';
 import WeeklySummaryChart from './components/charts/WeeklySummaryChart';
 import StatisticsModule from './components/statistics/StatisticsModule';
 import CopyUrlButton from './components/CopyUrlButton';
+import ShareButton from './components/ShareButton';
 import { loadConfig, getEventTypeConfig } from './utils/configLoader';
 import { getStateFromUrl, updateUrlState } from './utils/urlState';
 
@@ -125,7 +126,10 @@ function App() {
       <header className="app-header">
         <div className="header-top">
           <h1>Baby Event Tracker</h1>
-          <CopyUrlButton />
+          <div className="header-buttons">
+            <CopyUrlButton />
+            <ShareButton />
+          </div>
         </div>
         <div className="event-type-selector">
           <label htmlFor="event-type">Event Type: </label>
