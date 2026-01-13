@@ -148,11 +148,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'select':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <select
+              id={field.id}
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
               required={field.required}
@@ -171,11 +172,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'number':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <input
+              id={field.id}
               type="number"
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
@@ -190,11 +192,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
       case 'text':
         return (
           <div key={field.id} className="form-field">
-            <label>
+            <label htmlFor={field.id}>
               {field.label}
               {field.required && <span className="required">*</span>}
             </label>
             <input
+              id={field.id}
               type="text"
               value={value || ''}
               onChange={(e) => handleChange(field.id, e.target.value)}
@@ -211,7 +214,7 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="event-form">
+    <form onSubmit={handleSubmit} className="event-form" noValidate>
       <h2>{eventTypeConfig.label}</h2>
       {eventTypeConfig.fields.map(field => renderField(field))}
       <button type="submit" className="submit-button">
