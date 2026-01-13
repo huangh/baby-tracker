@@ -3,6 +3,24 @@
  * Encodes/decodes app state and config to/from URL-safe base64 JSON
  */
 
+function encodeBase64Utf8(str) {
+  // Browser
+  if (typeof btoa === 'function') {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  // Node (Vitest, SSR, etc.)
+  return Buffer.from(str, 'utf-8').toString('base64');
+}
+
+function decodeBase64Utf8(base64) {
+  // Browser
+  if (typeof atob === 'function') {
+    return decodeURIComponent(escape(atob(base64)));
+  }
+  // Node (Vitest, SSR, etc.)
+  return Buffer.from(base64, 'base64').toString('utf-8');
+}
+
 /**
  * Encode state and config to URL-safe base64 string
  * @param {Object} data - Event data array
@@ -16,7 +34,7 @@ export function encodeState(data, config) {
   };
   const jsonString = JSON.stringify(state);
   // Convert to base64, then make URL-safe
-  const base64 = btoa(unescape(encodeURIComponent(jsonString)));
+  const base64 = encodeBase64Utf8(jsonString);
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
@@ -38,7 +56,7 @@ export function decodeState(encodedString) {
       base64 += '=';
     }
     
-    const jsonString = decodeURIComponent(escape(atob(base64)));
+    const jsonString = decodeBase64Utf8(base64);
     const state = JSON.parse(jsonString);
     return {
       data: state.data || [],
