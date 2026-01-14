@@ -27,7 +27,22 @@ export function encodeState(events, config) {
     
     // Compress timestamp: round to 15 minutes and convert to Unix timestamp
     if (processed.timestamp) {
-      processed.timestamp = compressTimestamp(processed.timestamp);
+      try {
+        const compressed = compressTimestamp(processed.timestamp);
+        if (compressed > 0) {
+          processed.timestamp = compressed;
+        } else {
+          console.warn('Invalid timestamp compression result:', compressed, 'for event:', event);
+          // Fallback to current time
+          processed.timestamp = compressTimestamp(new Date());
+        }
+      } catch (err) {
+        console.error('Error compressing timestamp:', err, 'for event:', event);
+        processed.timestamp = compressTimestamp(new Date());
+      }
+    } else {
+      // Missing timestamp - use current time
+      processed.timestamp = compressTimestamp(new Date());
     }
     
     return processed;
@@ -94,7 +109,15 @@ export function decodeState(encodedString) {
     
     if (state.data) {
       // Old format: {data: [...], config: ...}
-      events = state.data;
+      // Handle old format - timestamps might be ISO strings or already Date objects
+      events = state.data.map(event => ({
+        ...event,
+        timestamp: event.timestamp instanceof Date
+          ? event.timestamp
+          : (typeof event.timestamp === 'number'
+            ? decompressTimestamp(event.timestamp)
+            : new Date(event.timestamp))
+      }));
     } else if (state.r || state.s) {
       // New compressed format: {r: recent events, s: summaries}
       const compressed = {
@@ -103,10 +126,42 @@ export function decodeState(encodedString) {
       };
       
       // Expand field names and decompress timestamps
-      const expandedRecent = expandEvents(compressed.recent).map(event => ({
-        ...event,
-        timestamp: event.timestamp ? decompressTimestamp(event.timestamp) : new Date()
-      }));
+      const expandedRecent = expandEvents(compressed.recent).map(event => {
+        let timestamp;
+        const tsValue = event.timestamp;
+        
+        if (tsValue !== undefined && tsValue !== null) {
+          if (typeof tsValue === 'number') {
+            // Validate it's a reasonable Unix timestamp (not 0 or negative)
+            if (tsValue > 0 && tsValue < 2147483647) { // Max 32-bit Unix timestamp
+              // Unix timestamp in seconds - decompress it
+              timestamp = decompressTimestamp(tsValue);
+            } else {
+              console.warn('Invalid Unix timestamp:', tsValue, 'in event:', event);
+              timestamp = new Date();
+            }
+          } else if (tsValue instanceof Date) {
+            timestamp = tsValue;
+          } else {
+            // Try to parse as date string
+            timestamp = new Date(tsValue);
+          }
+        } else {
+          console.warn('Missing timestamp in event:', event);
+          timestamp = new Date();
+        }
+        
+        // Final validation
+        if (isNaN(timestamp.getTime())) {
+          console.warn('Invalid timestamp after conversion:', tsValue, 'in event:', event);
+          timestamp = new Date();
+        }
+        
+        return {
+          ...event,
+          timestamp: timestamp
+        };
+      });
       
       // Decompress summaries back to events
       events = decompressEvents({
@@ -118,15 +173,38 @@ export function decodeState(encodedString) {
       events = Array.isArray(state) ? state : [];
     }
     
-    // Ensure all timestamps are Date objects
-    events = events.map(event => ({
-      ...event,
-      timestamp: event.timestamp instanceof Date 
-        ? event.timestamp 
-        : (typeof event.timestamp === 'number' 
-          ? decompressTimestamp(event.timestamp) 
-          : new Date(event.timestamp))
-    }));
+    // Ensure all timestamps are Date objects (final pass)
+    events = events.map(event => {
+      let timestamp;
+      if (event.timestamp instanceof Date) {
+        timestamp = event.timestamp;
+      } else if (typeof event.timestamp === 'number') {
+        // Check if it's a Unix timestamp (seconds) or milliseconds
+        // Unix timestamps are typically 10 digits (seconds), milliseconds are 13 digits
+        if (event.timestamp < 10000000000) {
+          // Unix timestamp in seconds
+          timestamp = decompressTimestamp(event.timestamp);
+        } else {
+          // Milliseconds timestamp
+          timestamp = new Date(event.timestamp);
+        }
+      } else if (event.timestamp) {
+        timestamp = new Date(event.timestamp);
+      } else {
+        timestamp = new Date();
+      }
+      
+      // Validate timestamp is not invalid
+      if (isNaN(timestamp.getTime())) {
+        console.warn('Invalid timestamp in event:', event);
+        timestamp = new Date();
+      }
+      
+      return {
+        ...event,
+        timestamp: timestamp
+      };
+    });
     
     return {
       data: events,

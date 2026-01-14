@@ -38,18 +38,40 @@ export default function JsonEditor({ events, onUpdate }) {
         return;
       }
 
-      // Validate each event has required fields
-      for (const event of parsed) {
-        if (!event.eventType || !event.timestamp) {
-          setError('Each event must have eventType and timestamp');
-          return;
+      // Validate each event has required fields and convert timestamps
+      const validatedEvents = parsed.map((event, index) => {
+        if (!event.eventType || event.timestamp === undefined || event.timestamp === null) {
+          throw new Error(`Event ${index + 1} must have eventType and timestamp`);
         }
         
-        // Convert timestamp strings to Date objects
-        if (typeof event.timestamp === 'string') {
-          event.timestamp = new Date(event.timestamp);
+        let timestamp;
+        if (event.timestamp instanceof Date) {
+          timestamp = event.timestamp;
+        } else if (typeof event.timestamp === 'string') {
+          timestamp = new Date(event.timestamp);
+        } else if (typeof event.timestamp === 'number') {
+          // Check if it's Unix timestamp (seconds) or milliseconds
+          if (event.timestamp < 10000000000) {
+            // Unix timestamp in seconds - convert to Date
+            timestamp = new Date(event.timestamp * 1000);
+          } else {
+            // Milliseconds timestamp
+            timestamp = new Date(event.timestamp);
+          }
+        } else {
+          throw new Error(`Event ${index + 1} has invalid timestamp type`);
         }
-      }
+        
+        // Validate timestamp
+        if (isNaN(timestamp.getTime())) {
+          throw new Error(`Event ${index + 1} has invalid timestamp value`);
+        }
+        
+        return {
+          ...event,
+          timestamp: timestamp
+        };
+      });
 
       // Update events with validated data
       onUpdate(validatedEvents);

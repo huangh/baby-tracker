@@ -38,9 +38,21 @@ export function compressEvents(events) {
   const summariesByDate = {};
   
   for (const event of events) {
-    const timestamp = event.timestamp instanceof Date 
-      ? event.timestamp 
-      : new Date(event.timestamp);
+    let timestamp;
+    if (event.timestamp instanceof Date) {
+      timestamp = event.timestamp;
+    } else if (typeof event.timestamp === 'number') {
+      // Check if it's Unix timestamp (seconds) or milliseconds
+      if (event.timestamp < 10000000000) {
+        // Unix timestamp in seconds - convert to Date
+        timestamp = new Date(event.timestamp * 1000);
+      } else {
+        // Milliseconds timestamp
+        timestamp = new Date(event.timestamp);
+      }
+    } else {
+      timestamp = new Date(event.timestamp);
+    }
     
     if (isRecentDate(timestamp)) {
       // Keep full event data for recent days
