@@ -138,6 +138,7 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
         return (
           <DateTimePicker
             key={field.id}
+            id={field.id}
             value={value}
             onChange={(date) => handleChange(field.id, date)}
             label={field.label}

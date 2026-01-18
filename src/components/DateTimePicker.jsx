@@ -6,7 +6,7 @@ import 'react-datepicker/dist/react-datepicker.css';
  * DateTimePicker Component
  * Shows a checkbox to use "now" or a date/time picker for custom time
  */
-export default function DateTimePicker({ value, onChange, label, required }) {
+export default function DateTimePicker({ value, onChange, label, required, id }) {
   // Initialize useNow based on whether we have a valid date value
   const [useNow, setUseNow] = useState(() => {
     if (!value) return true;
@@ -62,10 +62,11 @@ export default function DateTimePicker({ value, onChange, label, required }) {
 
   return (
     <div className="datetime-picker">
-      <label>{label}{required && <span className="required">*</span>}</label>
+      <label htmlFor={useNow ? `${id}-checkbox` : id}>{label}{required && <span className="required">*</span>}</label>
       <div className="datetime-controls">
         <label className="use-now-checkbox">
           <input
+            id={`${id}-checkbox`}
             type="checkbox"
             checked={useNow}
             onChange={(e) => handleNowToggle(e.target.checked)}
@@ -74,6 +75,7 @@ export default function DateTimePicker({ value, onChange, label, required }) {
         </label>
         {!useNow && (
           <DatePicker
+            id={id}
             selected={dateValue}
             onChange={handleDateChange}
             showTimeSelect

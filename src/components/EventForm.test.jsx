@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import EventForm from './EventForm';
 
 // Mock fetch to prevent network requests during tests
@@ -37,11 +38,12 @@ describe('EventForm', () => {
     expect(screen.getByLabelText(/Amount/i)).toBeInTheDocument();
   });
 
-  it('handles input changes', () => {
+  it('handles input changes', async () => {
+    const user = userEvent.setup();
     render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
     
     const amountInput = screen.getByLabelText(/Amount/i);
-    fireEvent.change(amountInput, { target: { value: '100' } });
+    await user.type(amountInput, '100');
     
     expect(amountInput.value).toBe('100');
   });
@@ -58,29 +60,26 @@ describe('EventForm', () => {
     expect(mockSubmit).not.toHaveBeenCalled();
   });
 
-  it('submits form with correct data', () => {
+  it('submits form with correct data', async () => {
+    const user = userEvent.setup();
     render(<EventForm eventTypeConfig={feedConfig} onSubmit={mockSubmit} />);
     
     // Select type
     const typeSelect = screen.getByLabelText(/Type/i);
-    fireEvent.change(typeSelect, { target: { value: 'bottle' } });
+    await user.selectOptions(typeSelect, 'bottle');
     
     // Enter amount
     const amountInput = screen.getByLabelText(/Amount/i);
-    fireEvent.change(amountInput, { target: { value: '150' } });
+    await user.type(amountInput, '150');
     
     const submitButton = screen.getByText('Add Event');
-    fireEvent.click(submitButton);
+    await user.click(submitButton);
     
     expect(mockSubmit).toHaveBeenCalledTimes(1);
     const submittedData = mockSubmit.mock.calls[0][0];
     expect(submittedData.eventType).toBe('feeding');
     expect(submittedData.type).toBe('bottle');
-    expect(submittedData.amount).toBe('150'); // Inputs are strings usually, unless parsed. The component parses it?
-    // Looking at code: `const value = formData[field.id];` -> validation parses parseFloat but submission sends `formData`.
-    // Wait, the component validation parses it: `const numValue = parseFloat(value);` but that's just for validation check.
-    // The `onSubmit` sends `...formData`. So it sends string '150'.
-    
+    expect(submittedData.amount).toBe('150');
     expect(submittedData.timestamp).toBeDefined();
   });
 
