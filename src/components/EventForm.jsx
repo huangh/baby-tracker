@@ -12,22 +12,12 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
   const lastConfigIdRef = useRef(null);
 
   useEffect(() => {
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EventForm.jsx:12',message:'useEffect entry',data:{hasConfig:!!eventTypeConfig,configId:eventTypeConfig?.id,initialValuesKeys:Object.keys(initialValues).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
     // Initialize form data with defaults
     const initialData = {};
     if (eventTypeConfig && eventTypeConfig.fields) {
       eventTypeConfig.fields.forEach(field => {
         if (field.default === 'now' && field.type === 'datetime') {
           const dateValue = new Date();
-          // #region agent log
-          try {
-            fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EventForm.jsx:18',message:'Creating new Date',data:{fieldId:field.id,dateValue:dateValue.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-          } catch(e) {}
-          // #endregion
           initialData[field.id] = dateValue;
         } else if (field.default !== undefined) {
           initialData[field.id] = field.default;
@@ -38,28 +28,13 @@ export default function EventForm({ eventTypeConfig, onSubmit, initialValues = {
         }
       });
     }
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EventForm.jsx:28',message:'Before setFormData',data:{initialDataKeys:Object.keys(initialData),hasTimestamp:!!initialData.timestamp,timestampType:initialData.timestamp?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
     // Only update if config ID changed or not yet initialized
     const currentConfigId = eventTypeConfig?.id;
     if (!initializedRef.current || lastConfigIdRef.current !== currentConfigId) {
       setFormData(initialData);
       initializedRef.current = true;
       lastConfigIdRef.current = currentConfigId;
-      // #region agent log
-      try {
-        fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EventForm.jsx:35',message:'After setFormData',data:{configId:currentConfigId},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-      } catch(e) {}
-      // #endregion
     }
-    // #region agent log
-    try {
-      fetch('http://127.0.0.1:7243/ingest/b59410d3-b4c0-4415-a721-a578a096f810',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EventForm.jsx:42',message:'useEffect skipped',data:{initialized:initializedRef.current,configIdChanged:lastConfigIdRef.current !== currentConfigId},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-    } catch(e) {}
-    // #endregion
   }, [eventTypeConfig?.id]); // Removed initialValues to prevent infinite loop
 
   const handleChange = (fieldId, value) => {
