@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import EventForm from './components/EventForm';
+import React, { useState, useEffect, useRef } from 'react';
+import MobileEventInput from './components/MobileEventInput';
 import EventList from './components/EventList';
 import DailyTimelineChart from './components/charts/DailyTimelineChart';
 import WeeklySummaryChart from './components/charts/WeeklySummaryChart';
@@ -7,13 +7,12 @@ import StatisticsModule from './components/statistics/StatisticsModule';
 import JsonEditor from './components/JsonEditor';
 import CopyUrlButton from './components/CopyUrlButton';
 import ShareButton from './components/ShareButton';
-import { loadConfig, getEventTypeConfig } from './utils/configLoader';
+import { loadConfig } from './utils/configLoader';
 import { getStateFromUrl, updateUrlState, isUrlEncrypted, decodeStateEncrypted } from './utils/urlState';
 
 function App() {
   const [config, setConfig] = useState(null);
   const [events, setEvents] = useState([]);
-  const [selectedEventType, setSelectedEventType] = useState('feeding');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -22,6 +21,9 @@ function App() {
   const [decryptPassword, setDecryptPassword] = useState('');
   const [decryptError, setDecryptError] = useState('');
   const [encryptedHash, setEncryptedHash] = useState('');
+  
+  // Ref for charts section (for scrolling on mobile)
+  const chartsSectionRef = useRef(null);
 
   // Initialize app: load config and state from URL
   useEffect(() => {
@@ -148,13 +150,18 @@ function App() {
   const handleEventSubmit = (eventData) => {
     const newEvent = {
       ...eventData,
-      id: Date.now(), // Simple ID generation
+      id: Date.now() + Math.random(), // Unique ID generation
       timestamp: eventData.timestamp instanceof Date 
         ? eventData.timestamp 
         : new Date(eventData.timestamp)
     };
     
-    setEvents(prev => [...prev, newEvent]);
+    // Update events state (this will trigger URL sync via useEffect)
+    setEvents(prev => {
+      const updated = [...prev, newEvent];
+      // The useEffect will sync to URL automatically
+      return updated;
+    });
   };
 
   const handleJsonUpdate = (updatedEvents) => {
@@ -166,11 +173,6 @@ function App() {
         : new Date(event.timestamp)
     }));
     setEvents(normalizedEvents);
-  };
-
-  const getCurrentEventTypeConfig = () => {
-    if (!config) return null;
-    return getEventTypeConfig(config, selectedEventType);
   };
 
   // Get baby name from config
@@ -249,27 +251,15 @@ function App() {
             <ShareButton babyName={babyName} events={events} />
           </div>
         </div>
-        <div className="event-type-selector">
-          <label htmlFor="event-type">Event Type: </label>
-          <select
-            id="event-type"
-            value={selectedEventType}
-            onChange={(e) => setSelectedEventType(e.target.value)}
-          >
-            {config.events.map(event => (
-              <option key={event.id} value={event.id}>
-                {event.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </header>
 
       <main className="app-main">
-        <div className="form-section">
-          <EventForm
-            eventTypeConfig={getCurrentEventTypeConfig()}
+        <div className="input-section">
+          <MobileEventInput
+            events={events}
             onSubmit={handleEventSubmit}
+            config={config}
+            chartsSectionRef={chartsSectionRef}
           />
         </div>
 
@@ -278,14 +268,14 @@ function App() {
         </div>
       </main>
 
-      <div className="json-section">
-        <JsonEditor events={events} onUpdate={handleJsonUpdate} />
-      </div>
-
-      <div className="charts-section">
+      <div className="charts-section" ref={chartsSectionRef}>
         <StatisticsModule events={events} />
         <DailyTimelineChart events={events} config={config} />
         <WeeklySummaryChart events={events} />
+      </div>
+
+      <div className="json-section">
+        <JsonEditor events={events} onUpdate={handleJsonUpdate} />
       </div>
     </div>
   );
