@@ -15,7 +15,7 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
   
   const amountInputRef = useRef(null);
 
-  // Calculate average of last 3 feed amounts
+  // Calculate average of last 2 feed amounts
   const calculateAverageFeedAmount = () => {
     const feedingEvents = (events || [])
       .filter(event => event.eventType === 'feeding' && event.amount)
@@ -24,7 +24,7 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
         const timeB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
         return timeB - timeA; // Most recent first
       })
-      .slice(0, 3)
+      .slice(0, 2)
       .map(event => parseFloat(event.amount))
       .filter(amount => !isNaN(amount) && amount > 0);
 
@@ -34,11 +34,23 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
     return Math.round(sum / feedingEvents.length);
   };
 
-  // Set default amount when feed type is selected
+  // Get slider config from feeding event config
+  const feedingConfig = config?.events?.find(e => e.id === 'feeding');
+  const amountField = feedingConfig?.fields?.find(f => f.id === 'amount');
+  const sliderConfig = amountField?.slider || { min: 0, max: 300, step: 5 };
+  const sliderMin = sliderConfig.min || 0;
+  const sliderMax = sliderConfig.max || 300;
+  const sliderStep = sliderConfig.step || 5;
+
+  // Set default amount when feed type is selected (centered on average of last 2)
   useEffect(() => {
     if (feedType && feedAmount === 0) {
       const avgAmount = calculateAverageFeedAmount();
-      setFeedAmount(avgAmount || 60); // Default to 60ml if no history
+      // Default to 60ml if no history, otherwise use average
+      const defaultAmount = avgAmount || 60;
+      // Ensure it's within slider bounds
+      const clampedAmount = Math.max(sliderMin, Math.min(sliderMax, defaultAmount));
+      setFeedAmount(clampedAmount);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedType]);
@@ -51,18 +63,14 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
     setFeedType(type);
     setShowFeedOptions(false);
     const avgAmount = calculateAverageFeedAmount();
-    setFeedAmount(avgAmount || 60);
+    const defaultAmount = avgAmount || 60;
+    const clampedAmount = Math.max(sliderMin, Math.min(sliderMax, defaultAmount));
+    setFeedAmount(clampedAmount);
   };
 
   const handleAmountChange = (e) => {
     const value = parseInt(e.target.value) || 0;
     setFeedAmount(value);
-  };
-
-  const handleAmountWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -5 : 5;
-    setFeedAmount(prev => Math.max(0, prev + delta));
   };
 
   const handlePeeToggle = () => {
@@ -138,7 +146,6 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
     }, 100);
   };
 
-  const feedingConfig = config?.events?.find(e => e.id === 'feeding');
   const peeingConfig = config?.events?.find(e => e.id === 'peeing');
   const poopingConfig = config?.events?.find(e => e.id === 'pooping');
 
@@ -191,20 +198,23 @@ export default function MobileEventInput({ events, onSubmit, config, chartsSecti
 
         {feedType && (
           <div className="amount-selector">
-            <label htmlFor="feed-amount">Amount (ml)</label>
-            <div className="amount-input-wrapper">
+            <label htmlFor="feed-amount">Amount (ml): {feedAmount}</label>
+            <div className="amount-slider-wrapper">
               <input
                 ref={amountInputRef}
                 id="feed-amount"
-                type="number"
-                min="0"
-                step="5"
+                type="range"
+                min={sliderMin}
+                max={sliderMax}
+                step={sliderStep}
                 value={feedAmount}
                 onChange={handleAmountChange}
-                onWheel={handleAmountWheel}
-                className="amount-input"
+                className="amount-slider"
               />
-              <div className="amount-wheel-hint">Scroll to adjust</div>
+              <div className="amount-slider-labels">
+                <span>{sliderMin}ml</span>
+                <span>{sliderMax}ml</span>
+              </div>
             </div>
           </div>
         )}

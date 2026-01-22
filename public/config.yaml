@@ -31,6 +31,10 @@ events:
         type: number
         required: true
         min: 0
+        slider:
+          min: 0
+          max: 300
+          step: 5
       - id: timestamp
         label: Time
         type: datetime

@@ -29,3 +29,7 @@ lerna-debug.log*
 .env.local
 .env.*.local
 .cursor/debug.log
+
+# Database
+*.db
+*.db-journal

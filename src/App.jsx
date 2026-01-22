@@ -7,8 +7,89 @@ import StatisticsModule from './components/statistics/StatisticsModule';
 import JsonEditor from './components/JsonEditor';
 import CopyUrlButton from './components/CopyUrlButton';
 import ShareButton from './components/ShareButton';
+import ExportCsvButton from './components/ExportCsvButton';
 import { loadConfig } from './utils/configLoader';
 import { getStateFromUrl, updateUrlState, isUrlEncrypted, decodeStateEncrypted } from './utils/urlState';
+
+// API base URL - defaults to localhost:3001 in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// API utility functions
+async function fetchEventsFromDB() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/events`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch events from database');
+    }
+    const events = await response.json();
+    // Convert timestamp strings to Date objects
+    return events.map(event => ({
+      ...event,
+      timestamp: new Date(event.timestamp)
+    }));
+  } catch (error) {
+    console.error('Error fetching events from database:', error);
+    throw error;
+  }
+}
+
+async function saveEventToDB(event) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...event,
+        timestamp: event.timestamp instanceof Date 
+          ? event.timestamp.toISOString() 
+          : event.timestamp
+      })
+    });
+    if (!response.ok) {
+      throw new Error('Failed to save event to database');
+    }
+    const savedEvent = await response.json();
+    // Convert timestamp string to Date object
+    return {
+      ...savedEvent[0],
+      timestamp: new Date(savedEvent[0].timestamp)
+    };
+  } catch (error) {
+    console.error('Error saving event to database:', error);
+    throw error;
+  }
+}
+
+async function syncEventsToDB(events) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/events/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(events.map(event => ({
+        ...event,
+        timestamp: event.timestamp instanceof Date 
+          ? event.timestamp.toISOString() 
+          : event.timestamp
+      })))
+    });
+    if (!response.ok) {
+      throw new Error('Failed to sync events to database');
+    }
+    const syncedEvents = await response.json();
+    // Convert timestamp strings to Date objects
+    return syncedEvents.map(event => ({
+      ...event,
+      timestamp: new Date(event.timestamp)
+    }));
+  } catch (error) {
+    console.error('Error syncing events to database:', error);
+    throw error;
+  }
+}
 
 function App() {
   const [config, setConfig] = useState(null);
@@ -25,7 +106,7 @@ function App() {
   // Ref for charts section (for scrolling on mobile)
   const chartsSectionRef = useRef(null);
 
-  // Initialize app: load config and state from URL
+  // Initialize app: load config and state from database
   useEffect(() => {
     const initialize = async () => {
       try {
@@ -33,6 +114,19 @@ function App() {
         const loadedConfig = await loadConfig();
         setConfig(loadedConfig);
         
+        // Try to load events from database first
+        try {
+          const dbEvents = await fetchEventsFromDB();
+          if (dbEvents.length > 0) {
+            setEvents(dbEvents);
+            setLoading(false);
+            return;
+          }
+        } catch (dbError) {
+          console.warn('Database not available, falling back to URL:', dbError);
+        }
+        
+        // Fallback to URL if database is empty or unavailable
         // Check if URL has encrypted data
         const hash = window.location.hash.slice(1);
         
@@ -49,6 +143,16 @@ function App() {
             timestamp: event.timestamp ? new Date(event.timestamp) : new Date()
           }));
           setEvents(deserializedEvents);
+          
+          // If we have URL events, sync them to database
+          if (deserializedEvents.length > 0) {
+            try {
+              await syncEventsToDB(deserializedEvents);
+            } catch (syncError) {
+              console.warn('Failed to sync URL events to database:', syncError);
+            }
+          }
+          
           setLoading(false);
         }
       } catch (err) {
@@ -106,10 +210,11 @@ function App() {
     window.history.replaceState(null, '', window.location.pathname);
   };
 
-  // Sync state to URL whenever events change
+  // Sync state to URL whenever events change (as backup/portability)
   // Don't store config in URL - it's loaded from YAML file
+  // Database is primary storage, URL is secondary
   useEffect(() => {
-    if (events !== null && !showPasswordDialog) {
+    if (events !== null && !showPasswordDialog && events.length > 0) {
       // Convert Date objects to ISO strings for serialization
       const serializedEvents = events.map(event => ({
         ...event,
@@ -119,6 +224,7 @@ function App() {
       }));
       
       // Only store events in URL, not config (config comes from YAML)
+      // This provides portability/backup, but database is primary
       updateUrlState(serializedEvents, null);
     }
   }, [events, showPasswordDialog]);
@@ -147,24 +253,35 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handleEventSubmit = (eventData) => {
+  const handleEventSubmit = async (eventData) => {
     const newEvent = {
       ...eventData,
-      id: Date.now() + Math.random(), // Unique ID generation
       timestamp: eventData.timestamp instanceof Date 
         ? eventData.timestamp 
         : new Date(eventData.timestamp)
     };
     
-    // Update events state (this will trigger URL sync via useEffect)
-    setEvents(prev => {
-      const updated = [...prev, newEvent];
-      // The useEffect will sync to URL automatically
-      return updated;
-    });
+    try {
+      // Save to database first
+      const savedEvent = await saveEventToDB(newEvent);
+      
+      // Update events state (this will trigger URL sync via useEffect)
+      setEvents(prev => {
+        const updated = [...prev, savedEvent];
+        return updated;
+      });
+    } catch (error) {
+      console.error('Failed to save event to database:', error);
+      // Fallback: add event locally without database
+      const fallbackEvent = {
+        ...newEvent,
+        id: Date.now() + Math.random()
+      };
+      setEvents(prev => [...prev, fallbackEvent]);
+    }
   };
 
-  const handleJsonUpdate = (updatedEvents) => {
+  const handleJsonUpdate = async (updatedEvents) => {
     // Ensure all timestamps are Date objects
     const normalizedEvents = updatedEvents.map(event => ({
       ...event,
@@ -172,7 +289,16 @@ function App() {
         ? event.timestamp 
         : new Date(event.timestamp)
     }));
-    setEvents(normalizedEvents);
+    
+    try {
+      // Sync to database
+      const syncedEvents = await syncEventsToDB(normalizedEvents);
+      setEvents(syncedEvents);
+    } catch (error) {
+      console.error('Failed to sync events to database:', error);
+      // Fallback: update locally without database
+      setEvents(normalizedEvents);
+    }
   };
 
   // Get baby name from config
@@ -249,6 +375,7 @@ function App() {
           <div className="header-buttons">
             <CopyUrlButton />
             <ShareButton babyName={babyName} events={events} />
+            <ExportCsvButton events={events} />
           </div>
         </div>
       </header>

@@ -1,6 +1,6 @@
 # Baby Event Tracker
 
-A React web application for tracking baby events (feeding, peeing, pooping) with YAML-configurable forms and URL-based state storage for maximum portability.
+A React web application for tracking baby events (feeding, peeing, pooping) with YAML-configurable forms, SQLite database backend, and URL-based state storage for maximum portability.
 
 ## Features
 
@@ -10,8 +10,11 @@ A React web application for tracking baby events (feeding, peeing, pooping) with
   - **Peeing**: Simple timestamp tracking
   - **Pooping**: Timestamp tracking with optional consistency description
 - **Smart Timestamps**: Defaults to current time with option to specify custom date/time
-- **URL-Based State**: All configuration and data stored in URL as URL-safe base64 encoded JSON
+- **SQLite Database Backend**: Persistent storage with automatic synchronization
+- **URL-Based State**: Data also stored in URL as URL-safe base64 encoded JSON for portability
+- **Mobile-Optimized Input**: Large, easy-to-click buttons with slider for feed amounts
 - **Event History**: View all entered events in reverse chronological order
+- **Data Visualization**: Daily timeline charts and weekly summary statistics
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Getting Started
@@ -29,13 +32,29 @@ npm install
 
 ### Development
 
-Start the development server:
+The application requires both a backend server (for SQLite database) and the frontend dev server.
 
+**Option 1: Run both together (recommended)**
+
+```bash
+npm run dev:full
+```
+
+This starts both the backend API server (port 3001) and the frontend dev server (port 3000).
+
+**Option 2: Run separately**
+
+In one terminal, start the backend server:
+```bash
+npm run server
+```
+
+In another terminal, start the frontend dev server:
 ```bash
 npm run dev
 ```
 
-The app will open at `http://localhost:3000`
+The app will open at `http://localhost:3000` and the API will be available at `http://localhost:3001`
 
 ### Build
 
@@ -83,15 +102,27 @@ events:
         options: # for select fields
           - value: option-value
             label: Option Label
+        slider: # for number fields (feed amount)
+          min: 0
+          max: 300
+          step: 5
 ```
+
+### Feed Amount Slider
+
+The feed amount input uses a slider that:
+- Defaults to the average of the last 2 feed amounts
+- Has configurable min/max limits (default: 0-300ml)
+- Step size is configurable (default: 5ml)
 
 ## How It Works
 
 1. **Form Rendering**: The app dynamically generates forms based on YAML configuration
-2. **State Management**: All events are stored in React state
-3. **URL Synchronization**: State is automatically encoded to URL-safe base64 and stored in the URL hash
-4. **Portability**: Share the URL to transfer all events and configuration
-5. **Persistence**: Browser back/forward navigation works via URL state
+2. **Database Storage**: All events are stored in SQLite database (`baby_tracker.db`) for persistence
+3. **State Management**: Events are loaded from database on page load and synced on every update
+4. **URL Synchronization**: State is also encoded to URL-safe base64 and stored in the URL hash as backup/portability
+5. **Portability**: Share the URL to transfer all events and configuration
+6. **Persistence**: Database ensures data persists across sessions; URL provides backup and sharing capability
 
 ## Project Structure
 
@@ -101,9 +132,15 @@ baby-tracker/
 │   └── config.yaml          # Event type definitions
 ├── src/
 │   ├── components/
+│   │   ├── MobileEventInput.jsx
 │   │   ├── DateTimePicker.jsx
 │   │   ├── EventForm.jsx
-│   │   └── EventList.jsx
+│   │   ├── EventList.jsx
+│   │   ├── charts/
+│   │   │   ├── DailyTimelineChart.jsx
+│   │   │   └── WeeklySummaryChart.jsx
+│   │   └── statistics/
+│   │       └── StatisticsModule.jsx
 │   ├── utils/
 │   │   ├── configLoader.js
 │   │   └── urlState.js
@@ -111,6 +148,8 @@ baby-tracker/
 │   │   └── App.css
 │   ├── App.jsx
 │   └── main.jsx
+├── server.js                # Express backend with SQLite
+├── baby_tracker.db          # SQLite database (created automatically)
 ├── index.html
 ├── vite.config.js
 └── package.json
@@ -120,8 +159,11 @@ baby-tracker/
 
 - React 19
 - Vite
+- Express.js (backend API)
+- better-sqlite3 (SQLite database)
 - js-yaml (YAML parsing)
 - react-datepicker (date/time picker)
+- Recharts (data visualization)
 
 ## License
 
